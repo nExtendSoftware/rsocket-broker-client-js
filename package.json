@@ -7,7 +7,14 @@
     "test": "nx test"
   },
   "dependencies": {
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "rsocket-adapter-rxjs": "^1.0.0-alpha.4",
+    "rsocket-composite-metadata": "^1.0.0-alpha.3",
+    "rsocket-core": "^1.0.0-alpha.3",
+    "rsocket-messaging": "^1.0.0-alpha.3",
+    "rsocket-websocket-client": "^1.0.0-alpha.3",
+    "rxjs": "~7.8.0",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@nx/eslint-plugin": "16.6.0",
