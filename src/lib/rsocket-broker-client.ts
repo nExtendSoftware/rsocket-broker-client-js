@@ -34,6 +34,7 @@ import MESSAGE_RSOCKET_COMPOSITE_METADATA = WellKnownMimeType.MESSAGE_RSOCKET_CO
 import MESSAGE_RSOCKET_AUTHENTICATION = WellKnownMimeType.MESSAGE_RSOCKET_AUTHENTICATION;
 import {SetupConnection} from "./setup-connection";
 import {Tags} from "./rsocket/metadata/tags";
+import { asyncScheduler, Observable } from "rxjs";
 
 
 @Injectable({
@@ -55,6 +56,14 @@ export class rsocketBrokerClient {
     return map;
   }
 
+  public async fireAndForget(rsocket: RSocket, payload: string, metadata : Map<string | number | WellKnownMimeType, Buffer>) {
+    const request = RxRequestersFactory.fireAndForget(
+      payload,
+      this.stringCodec
+    );
+    return request(rsocket, metadata);
+  }
+
   public async requestResponse(rsocket: RSocket, payload: string, metadata : Map<string | number | WellKnownMimeType, Buffer>) {
     const request = RxRequestersFactory.requestResponse(
       payload,
@@ -70,6 +79,18 @@ export class rsocketBrokerClient {
       this.stringCodec,
       this.stringCodec,
       5
+    );
+    return request(rsocket, metadata);
+  }
+
+  /* request channel may not be currently supported by rsocket broker */
+  public async requestChannel(rsocket: RSocket, payload: Observable<string>, metadata : Map<string | number | WellKnownMimeType, Buffer>) {
+    const request = RxRequestersFactory.requestChannel(
+      payload,
+      this.stringCodec,
+      this.stringCodec,
+      256,
+      asyncScheduler
     );
     return request(rsocket, metadata);
   }
