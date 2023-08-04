@@ -1,10 +1,33 @@
 {
-  "name": "rsocket-broker-client-js",
-  "version": "0.0.1",
-  "license": "MIT",
+  "name": "@nextend/rsocket-broker-client-js",
+  "version": "0.0.3",
+  "license": "Apache-2.0",
   "scripts": {
     "build": "nx build",
     "test": "nx test"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/nExtendSoftware/rsocket-broker-client-js.git"
+  },
+  "author": "Original authors rsocket-js, additions by @veltmanj",
+  "description": "RSocket Broker Client JS",
+    "keywords": [
+        "rsocket",
+        "broker",
+        "client"
+    ],
+  "peerDependencies": {
+    "rsocket-adapter-rxjs": "^1.0.0-alpha.4",
+    "rsocket-composite-metadata": "^1.0.0-alpha.3",
+    "rsocket-core": "^1.0.0-alpha.3",
+    "rsocket-messaging": "^1.0.0-alpha.3",
+    "rsocket-websocket-client": "^1.0.0-alpha.3",
+    "rxjs": "~7.8.0",
+    "uuid": "^9.0.0"
   },
   "dependencies": {
     "tslib": "^2.3.0",
