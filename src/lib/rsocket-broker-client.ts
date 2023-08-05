@@ -32,7 +32,7 @@ import {BrokerClientId, encodeBrokerRouteSetup, encodeBrokerAddress} from "./rso
 import MESSAGE_RSOCKET_ROUTING = WellKnownMimeType.MESSAGE_RSOCKET_ROUTING;
 import MESSAGE_RSOCKET_COMPOSITE_METADATA = WellKnownMimeType.MESSAGE_RSOCKET_COMPOSITE_METADATA;
 import MESSAGE_RSOCKET_AUTHENTICATION = WellKnownMimeType.MESSAGE_RSOCKET_AUTHENTICATION;
-import {SetupConnection} from "./setup-connection";
+import {ConnectionProperties} from "./connection-properties";
 import {Tags} from "./rsocket/metadata/tags";
 import { asyncScheduler, Observable } from "rxjs";
 
@@ -95,7 +95,7 @@ export class rsocketBrokerClient {
     return request(rsocket, metadata);
   }
 
-  public async connect(setupConnection : SetupConnection): Promise<RSocket> {
+  public async connect(setupConnection : ConnectionProperties): Promise<RSocket> {
     window.Buffer = window.Buffer || Buffer;
 
     const connector = new RSocketConnector({

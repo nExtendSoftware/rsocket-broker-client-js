@@ -13,16 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// Purpose: RSocket setup request and response types.
 
-import {BrokerClientId} from "./rsocket/metadata";
+// Purpose: RSocket setup request and response types.
+import {BrokerClientId, BrokerRoutingType} from "./rsocket/metadata";
+import {Buffer} from "buffer";
 import {Tags} from "./rsocket/metadata/tags";
 
-export interface SetupConnection {
+export interface RequestProperties {
     token: string;
-    brokerUrl: string;
+    payload: Buffer;
     brokerClientId: BrokerClientId;
-    brokerClientName: string;
-    connectionTags: Tags;
+    route: string;
+    brokerTargetName: string;
+    addressTags: Tags;
+    addressMetadataTags: Tags;
+    flags: BrokerRoutingType;
 }
 
