@@ -22,6 +22,9 @@ to be used in conjunction with  [rsocket-broker](https://github.com/rsocket-brok
 
 ## Usage
 
+    /* instance of RSocket-broker-client 
+        (maybe define or wrap into service) */
+    const rsocket-broker-client = new RSocketBrokerClient();
 
     /* create a new broker client id */
     const id = new BrokerClientId();
@@ -35,7 +38,7 @@ to be used in conjunction with  [rsocket-broker](https://github.com/rsocket-brok
       connectionTags: new Tags(),
     };
 
-    const rsocket = await this.rSocketService.connect(connectionProperties);
+    const rsocket = await this.rsocket-broker-client.connect(connectionProperties);
 
     /*  
         data to send to target destination function, 
@@ -67,8 +70,8 @@ to be used in conjunction with  [rsocket-broker](https://github.com/rsocket-brok
         send request/responsestream to target function
         metadata is not optional
     */
-    const metadata=  this.rSocketService.addMetadata(requestProperties.token, requestProperties.brokerClientId, requestProperties.route, requestProperties.addressMetadataTags, requestProperties.addressTags, requestProperties.flags)
-    const response = await this.rSocketService.requestStream(rsocket, dummyData.toPayloadString(), metadata);
+    const metadata=  this.rsocket-broker-client.addMetadata(requestProperties.token, requestProperties.brokerClientId, requestProperties.route, requestProperties.addressMetadataTags, requestProperties.addressTags, requestProperties.flags)
+    const response = await this.rsocket-broker-client.requestStream(rsocket, dummyData.toPayloadString(), metadata);
     response.subscribe({
         next: (payload: string) => {
           const dummyData = new DummyData();
