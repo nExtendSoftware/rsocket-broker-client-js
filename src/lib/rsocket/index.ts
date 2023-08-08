@@ -13,11 +13,4 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-export * from "./BrokerAddressMetadata";
-export * from "./BrokerRouteSetupMetadata";
-export * from "./broker-frame-type";
-export * from "./broker-routing-type";
-export * from "./broker-client-id";
-export * from "./WellKnownKey";
-export * from "./tags";
+export * from "./metadata";

@@ -1,6 +1,6 @@
 {
   "name": "rsocket-broker-client-js",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "license": "Apache-2.0",
   "scripts": {
     "build": "nx build",
@@ -30,13 +30,13 @@
     "uuid": "^9.0.0"
   },
   "dependencies": {
-    "tslib": "^2.3.0",
     "rsocket-adapter-rxjs": "^1.0.0-alpha.4",
     "rsocket-composite-metadata": "^1.0.0-alpha.3",
     "rsocket-core": "^1.0.0-alpha.3",
     "rsocket-messaging": "^1.0.0-alpha.3",
     "rsocket-websocket-client": "^1.0.0-alpha.3",
     "rxjs": "~7.8.0",
+    "tslib": "^2.3.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
@@ -46,6 +46,7 @@
     "@nx/vite": "16.6.0",
     "@nx/workspace": "16.6.0",
     "@types/node": "18.7.1",
+    "@types/uuid": "^9.0.2",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.60.1",
     "@vitest/coverage-c8": "~0.32.0",
