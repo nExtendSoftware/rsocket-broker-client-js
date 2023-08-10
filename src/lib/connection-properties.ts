@@ -15,8 +15,9 @@
  */
 // Purpose: RSocket setup request and response types.
 
-import {BrokerClientId} from "./rsocket/metadata";
-import {Tags} from "./rsocket/metadata/tags";
+
+import { BrokerClientId } from "./broker-client-id";
+import { Tags } from "./tags";
 
 export interface ConnectionProperties {
     token: string;

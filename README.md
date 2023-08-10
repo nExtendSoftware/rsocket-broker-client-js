@@ -24,7 +24,7 @@ to be used in conjunction with  [rsocket-broker](https://github.com/rsocket-brok
 
     /* instance of RSocket-broker-client 
         (maybe define or wrap into service) */
-    const rsocket-broker-client = new RSocketBrokerClient();
+    const rsocket-broker-client = new RsocketBrokerClient();
 
     /* create a new broker client id */
     const id = new BrokerClientId();

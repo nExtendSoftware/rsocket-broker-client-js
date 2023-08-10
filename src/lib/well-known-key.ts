@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export enum BrokerFrameType {
 
-    ADDRESS = ( 5 ),
-    ROUTE_SETUP = ( 1 )
+// Purpose: Enumerates the well-known keys used in the RSocket Broker.
+
+export enum WellKnownKey {
+
+    SERVICE_NAME = 129,
+    ROUTE_ID = 2,
 
 }

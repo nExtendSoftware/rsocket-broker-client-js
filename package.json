@@ -1,6 +1,6 @@
 {
   "name": "rsocket-broker-client-js",
-  "version": "0.0.8",
+  "version": "0.0.19",
   "license": "Apache-2.0",
   "scripts": {
     "build": "nx build",
@@ -61,6 +61,15 @@
     "vitest": "~0.32.0"
   },
   "type": "module",
-  "main": "./src/index.js",
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "require": "./src/index.js"
+    },
+    "./src/index.js": {
+      "import": "./src/index.js",
+      "require": "./src/index.js"
+    }
+  },
   "typings": "./src/index.d.ts"
 }

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-import {BrokerClientId} from "./broker-client-id";
-import {BrokerFrameType} from "./broker-frame-type";
-import {Tags} from "./tags";
 
-export class AddressMetadata {
+import { Tags } from "./tags";
+import { BrokerFrameType } from "./broker-frame-type";
+import { BrokerClientId } from "./broker-client-id";
+
+export class BrokerAddressMetadata {
     _buffer: Buffer;
 
     constructor(buffer: Buffer) {

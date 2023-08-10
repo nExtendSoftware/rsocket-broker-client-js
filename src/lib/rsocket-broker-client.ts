@@ -27,20 +27,24 @@ import {
 } from "rsocket-core";
 import {WebsocketClientTransport} from "rsocket-websocket-client";
 import {Buffer} from "buffer";
-import {BrokerClientId, encodeBrokerRouteSetup, encodeBrokerAddress} from "./rsocket/metadata";
 
 import MESSAGE_RSOCKET_ROUTING = WellKnownMimeType.MESSAGE_RSOCKET_ROUTING;
 import MESSAGE_RSOCKET_COMPOSITE_METADATA = WellKnownMimeType.MESSAGE_RSOCKET_COMPOSITE_METADATA;
 import MESSAGE_RSOCKET_AUTHENTICATION = WellKnownMimeType.MESSAGE_RSOCKET_AUTHENTICATION;
-import {ConnectionProperties} from "./connection-properties";
-import {Tags} from "./rsocket/metadata/tags";
+import { ConnectionProperties } from "./connection-properties";
 import { asyncScheduler, Observable } from "rxjs";
+import { BrokerClientId } from "./broker-client-id";
+import { Tags } from "./tags";
+import { encodeBrokerAddress } from "./broker-address-metadata";
+import { encodeBrokerRouteSetup } from "./broker-route-setup-metadata";
+
+
 
 
 @Injectable({
   providedIn: 'root'
 })
-export class rsocketBrokerClient {
+export class RsocketBrokerClient {
 
   constructor() { console.log("rsocketBrokerClient constructor"); }
 

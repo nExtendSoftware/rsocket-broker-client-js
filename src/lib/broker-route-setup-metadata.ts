@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import {BrokerClientId} from "./broker-client-id";
-import {Tags} from "./tags";
 
 
+import { BrokerClientId } from "./broker-client-id";
+import { Tags } from "./tags";
 
 export class BrokerRouteSetupMetadata {
   _buffer: Buffer;

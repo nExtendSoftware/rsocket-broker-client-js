@@ -8,18 +8,18 @@
     "experimentalDecorators": true,
     "importHelpers": true,
     "target": "es2020",
-    "module": "commonjs",
+    "module": "ES2020",
     "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "paths": {
       "rsocket-broker-client-js": ["src/index.ts"]
     },
     "types": ["vitest"]
   },
   "files": [],
-  "include": [],
+  "include": ["src/**/*.ts"],
   "references": [
     {
       "path": "./tsconfig.lib.json"
