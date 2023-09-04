@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+//how to export all dependencies from this module so they can be imported in other modules without having to import each one individually?
 import { Injectable } from '@angular/core';
 
 import {
@@ -44,6 +44,7 @@ import { encodeBrokerRouteSetup } from "./broker-route-setup-metadata";
 @Injectable({
   providedIn: 'root'
 })
+// eslint-disable-class-methods-use-this @typescript-eslint/no-unsafe-call @typescript-eslint/no-unsafe-member-access @typescript-eslint/no-unsafe-return @typescript-eslint/no-unsafe-assignment @typescript-eslint/no-unsafe-call @typescript-eslint/no-unsafe-member-access @typescript-eslint/no-unsafe-return
 export class RsocketBrokerClient {
 
   constructor() { console.log("rsocketBrokerClient constructor"); }

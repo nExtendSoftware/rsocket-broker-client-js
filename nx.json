@@ -5,12 +5,9 @@
       "runner": "nx-cloud",
       "options": {
         "cacheableOperations": [
-          "build",
-          "lint",
-          "test",
-          "e2e"
+          "test"
         ],
-        "accessToken": "NDdmODQ5MzEtZjQ2ZC00ODJkLTk1NGYtM2FlNmU1MDA3M2IxfHJlYWQtd3JpdGU="
+        "accessToken": "YTQ0NTI4MjMtYjg3Ny00Mjk5LTliYTMtZDJjMTM5NmYxYmJifHJlYWQtd3JpdGU="
       }
     }
   },
@@ -50,5 +47,8 @@
       "!{projectRoot}/tsconfig.spec.json"
     ],
     "sharedGlobals": []
+  },
+  "affected": {
+    "defaultBase": "main"
   }
 }

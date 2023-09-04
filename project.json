@@ -25,6 +25,9 @@
       "executor": "@nx/vite:test",
       "outputs": ["coverage/rsocket-broker-client-js"],
       "options": {
+        "allowedCommonJsDependencies": [
+          "buffer","rsocket-adapter-rxjs","rsocket-core","rsocket-websocket-client","rsocket-composite-metadata"
+        ],
         "passWithNoTests": true,
         "reportsDirectory": "coverage/rsocket-broker-client-js"
       }
