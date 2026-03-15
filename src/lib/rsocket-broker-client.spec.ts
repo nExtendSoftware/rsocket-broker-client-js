@@ -1,5 +1,7 @@
 import { Buffer } from 'buffer';
+import { of } from 'rxjs';
 
+import { RxRequestersFactory } from 'rsocket-adapter-rxjs';
 import {
   encodeAndAddCustomMetadata,
   encodeBearerAuthMetadata,
@@ -18,8 +20,10 @@ import {
 } from './broker-client-id';
 import { encodeBrokerRouteSetup } from './broker-route-setup-metadata';
 import {
+  DEFAULT_REQUEST_CHANNEL_PREFETCH,
   DEFAULT_KEEP_ALIVE,
   DEFAULT_LIFETIME,
+  DEFAULT_REQUEST_STREAM_PREFETCH,
   RsocketBrokerClient,
   StringCodec,
 } from './rsocket-broker-client';
@@ -136,6 +140,93 @@ describe('RsocketBrokerClient', () => {
     );
     expect(capturedConfig?.setup?.payload?.data).toEqual(Buffer.alloc(0));
     expect(capturedConfig?.setup?.payload?.metadata).toEqual(expectedMetadata);
+  });
+
+  it('delegates fire-and-forget requests to the RSocket requester factory', () => {
+    const client = new RsocketBrokerClient();
+    const metadata = new Map();
+    const rsocket = { close: vi.fn() } as unknown as RSocket;
+    const request = vi.fn().mockReturnValue('fnf-result');
+
+    vi.spyOn(RxRequestersFactory, 'fireAndForget').mockReturnValue(
+      request as never
+    );
+
+    const result = client.fireAndForget(rsocket, 'payload', metadata);
+
+    expect(RxRequestersFactory.fireAndForget).toHaveBeenCalledWith(
+      'payload',
+      client.stringCodec
+    );
+    expect(request).toHaveBeenCalledWith(rsocket, metadata);
+    expect(result).toBe('fnf-result');
+  });
+
+  it('delegates request-response requests to the RSocket requester factory', () => {
+    const client = new RsocketBrokerClient();
+    const metadata = new Map();
+    const rsocket = { close: vi.fn() } as unknown as RSocket;
+    const request = vi.fn().mockReturnValue('rr-result');
+
+    vi.spyOn(RxRequestersFactory, 'requestResponse').mockReturnValue(
+      request as never
+    );
+
+    const result = client.requestResponse(rsocket, 'payload', metadata);
+
+    expect(RxRequestersFactory.requestResponse).toHaveBeenCalledWith(
+      'payload',
+      client.stringCodec,
+      client.stringCodec
+    );
+    expect(request).toHaveBeenCalledWith(rsocket, metadata);
+    expect(result).toBe('rr-result');
+  });
+
+  it('delegates request-stream requests to the RSocket requester factory', () => {
+    const client = new RsocketBrokerClient();
+    const metadata = new Map();
+    const rsocket = { close: vi.fn() } as unknown as RSocket;
+    const request = vi.fn().mockReturnValue('stream-result');
+
+    vi.spyOn(RxRequestersFactory, 'requestStream').mockReturnValue(
+      request as never
+    );
+
+    const result = client.requestStream(rsocket, 'payload', metadata);
+
+    expect(RxRequestersFactory.requestStream).toHaveBeenCalledWith(
+      'payload',
+      client.stringCodec,
+      client.stringCodec,
+      DEFAULT_REQUEST_STREAM_PREFETCH
+    );
+    expect(request).toHaveBeenCalledWith(rsocket, metadata);
+    expect(result).toBe('stream-result');
+  });
+
+  it('delegates request-channel requests to the RSocket requester factory', () => {
+    const client = new RsocketBrokerClient();
+    const payload = of('payload');
+    const metadata = new Map();
+    const rsocket = { close: vi.fn() } as unknown as RSocket;
+    const request = vi.fn().mockReturnValue('channel-result');
+
+    vi.spyOn(RxRequestersFactory, 'requestChannel').mockReturnValue(
+      request as never
+    );
+
+    const result = client.requestChannel(rsocket, payload, metadata);
+
+    expect(RxRequestersFactory.requestChannel).toHaveBeenCalledWith(
+      payload,
+      client.stringCodec,
+      client.stringCodec,
+      DEFAULT_REQUEST_CHANNEL_PREFETCH,
+      expect.anything()
+    );
+    expect(request).toHaveBeenCalledWith(rsocket, metadata);
+    expect(result).toBe('channel-result');
   });
 
   it('encodes broker client ids without precision loss', () => {
