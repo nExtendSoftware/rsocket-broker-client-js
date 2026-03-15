@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 // Purpose: RSocket setup request and response types.
-
-
-import { BrokerClientId } from "./broker-client-id";
-import { Tags } from "./tags";
+import { BrokerClientId } from './broker-client-id';
+import { Tags } from './tags';
 
 export interface ConnectionProperties {
-    token: string;
-    brokerUrl: string;
-    brokerClientId: BrokerClientId;
-    brokerClientName: string;
-    connectionTags: Tags;
+  token: string;
+  brokerUrl: string;
+  brokerClientId: BrokerClientId;
+  brokerClientName: string;
+  connectionTags: Tags;
+  keepAlive?: number;
+  lifetime?: number;
+  dataMimeType?: string;
+  metadataMimeType?: string;
 }
-

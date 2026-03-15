@@ -13,16 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
-
-import { BrokerClientId } from "./broker-client-id";
-import { Tags } from "./tags";
+import { BrokerClientId } from './broker-client-id';
+import {
+  BROKER_CLIENT_ID_LENGTH,
+  BROKER_HEADER_LENGTH,
+  encodeBrokerClientId,
+  encodeBrokerFrameHeader,
+  encodeBrokerTags,
+  encodeLengthPrefixedText,
+} from './encoding';
+import { BrokerFrameType } from './broker-frame-type';
+import { Tags } from './tags';
 
 export class BrokerRouteSetupMetadata {
-  _buffer: Buffer;
-  static FrameHeaderBytes = 6;
-  static IdBytes = 32;
+  readonly buffer: Buffer;
+  static FrameHeaderBytes = BROKER_HEADER_LENGTH;
+  static IdBytes = BROKER_CLIENT_ID_LENGTH;
 
   /**
    * Mimimum value that would overflow bitwise operators (2^32).
@@ -31,16 +37,25 @@ export class BrokerRouteSetupMetadata {
 
   static readonly FLAGS_MASK = 0x3ff;
 
-  static readonly FRAME_HEADER_SIZE = 6;
+  static readonly FRAME_HEADER_SIZE = BROKER_HEADER_LENGTH;
 
   constructor(buffer: Buffer) {
-    this._buffer = buffer;
+    this.buffer = buffer;
   }
 
-}
+  get _buffer(): Buffer {
+    return this.buffer;
+  }
 
-function toHex(first: bigint) {
-  return first.toString(16)
+  static encode(
+    id: BrokerClientId,
+    serviceName: string,
+    tags: Tags
+  ): BrokerRouteSetupMetadata {
+    return new BrokerRouteSetupMetadata(
+      encodeBrokerRouteSetup(id, serviceName, tags)
+    );
+  }
 }
 
 /**
@@ -51,28 +66,15 @@ function toHex(first: bigint) {
  * @param tags non-empty string with tags
  * @returns {Buffer} with encoded content
  */
-export function encodeBrokerRouteSetup(id: BrokerClientId, serviceName: string, tags : Tags): Buffer {
-
-  const buffer = Buffer.from([0x01, 0x02, 0x03, 0x04, 0x05, 0x06]);
-
-  const idFirstBuffer = Buffer.allocUnsafe(8);
-    idFirstBuffer.write(toHex(id.first), 0);
-  const idSecondBuffer = Buffer.allocUnsafe(8);
-    idSecondBuffer.write(toHex(id.second), 0);
-  const idBuffer = Buffer.concat([idFirstBuffer, idSecondBuffer]);
-
-  const serviceNameBuffer = Buffer.from(serviceName);
-  const serviceNameMetadataBuffer = Buffer.allocUnsafe(1 + serviceName.length);
-  serviceNameMetadataBuffer.writeUInt8(serviceName.length, 0);
-  serviceNameBuffer.copy(serviceNameMetadataBuffer, 1)
-
-  return Buffer.concat([buffer, idBuffer, serviceNameMetadataBuffer]);
+export function encodeBrokerRouteSetup(
+  id: BrokerClientId,
+  serviceName: string,
+  tags: Tags
+): Buffer {
+  return Buffer.concat([
+    encodeBrokerFrameHeader(BrokerFrameType.ROUTE_SETUP),
+    encodeBrokerClientId(id),
+    encodeLengthPrefixedText(serviceName, 'serviceName'),
+    encodeBrokerTags(tags),
+  ]);
 }
-
-
-
-
-
-
-
-

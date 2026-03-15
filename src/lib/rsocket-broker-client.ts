@@ -13,55 +13,113 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//how to export all dependencies from this module so they can be imported in other modules without having to import each one individually?
-import { Injectable } from '@angular/core';
-
+import { Buffer } from 'buffer';
+import { asyncScheduler, Observable } from 'rxjs';
+import { RxRequestersFactory } from 'rsocket-adapter-rxjs';
 import {
-  encodeCompositeMetadata, encodeRoute,
+  encodeAndAddCustomMetadata,
   encodeBearerAuthMetadata,
-  WellKnownMimeType, encodeAndAddCustomMetadata,
-} from "rsocket-composite-metadata";
-import {RxRequestersFactory} from "rsocket-adapter-rxjs";
+  encodeCompositeMetadata,
+  encodeRoute,
+  WellKnownMimeType,
+} from 'rsocket-composite-metadata';
+import { RSocketConnector } from 'rsocket-core';
+import type { ClientTransport, ConnectorConfig, RSocket } from 'rsocket-core';
+import { WebsocketClientTransport } from 'rsocket-websocket-client';
+
+import { encodeBrokerAddress } from './broker-address-metadata';
+import { BrokerClientId } from './broker-client-id';
+import { ConnectionProperties } from './connection-properties';
 import {
-  RSocket, RSocketConnector
-} from "rsocket-core";
-import {WebsocketClientTransport} from "rsocket-websocket-client";
-import {Buffer} from "buffer";
+  BROKER_DEFAULT_DATA_MIME_TYPE,
+  BROKER_FRAME_MIME_TYPE,
+} from './encoding';
+import { encodeBrokerRouteSetup } from './broker-route-setup-metadata';
+import { Tags } from './tags';
 
-import MESSAGE_RSOCKET_ROUTING = WellKnownMimeType.MESSAGE_RSOCKET_ROUTING;
-import MESSAGE_RSOCKET_COMPOSITE_METADATA = WellKnownMimeType.MESSAGE_RSOCKET_COMPOSITE_METADATA;
 import MESSAGE_RSOCKET_AUTHENTICATION = WellKnownMimeType.MESSAGE_RSOCKET_AUTHENTICATION;
-import { ConnectionProperties } from "./connection-properties";
-import { asyncScheduler, Observable } from "rxjs";
-import { BrokerClientId } from "./broker-client-id";
-import { Tags } from "./tags";
-import { encodeBrokerAddress } from "./broker-address-metadata";
-import { encodeBrokerRouteSetup } from "./broker-route-setup-metadata";
+import MESSAGE_RSOCKET_COMPOSITE_METADATA = WellKnownMimeType.MESSAGE_RSOCKET_COMPOSITE_METADATA;
+import MESSAGE_RSOCKET_ROUTING = WellKnownMimeType.MESSAGE_RSOCKET_ROUTING;
 
+export type BrokerMetadataKey = string | number | WellKnownMimeType;
+export type BrokerMetadata = Map<BrokerMetadataKey, Buffer>;
+export type WebSocketFactory = (url: string) => WebSocket;
 
+type ConnectorLike = Pick<RSocketConnector, 'connect'>;
+type ConnectorFactory = (config: ConnectorConfig) => ConnectorLike;
+type TransportFactory = (connection: ConnectionProperties) => ClientTransport;
+type BufferGlobal = typeof globalThis & {
+  Buffer?: typeof Buffer;
+  WebSocket?: new (url: string) => WebSocket;
+  window?: {
+    Buffer?: typeof Buffer;
+  };
+};
 
+export interface RsocketBrokerClientOptions {
+  createConnector?: ConnectorFactory;
+  createTransport?: TransportFactory;
+  webSocketFactory?: WebSocketFactory;
+}
 
-@Injectable({
-  providedIn: 'root'
-})
-// eslint-disable-class-methods-use-this @typescript-eslint/no-unsafe-call @typescript-eslint/no-unsafe-member-access @typescript-eslint/no-unsafe-return @typescript-eslint/no-unsafe-assignment @typescript-eslint/no-unsafe-call @typescript-eslint/no-unsafe-member-access @typescript-eslint/no-unsafe-return
+export const DEFAULT_KEEP_ALIVE = 10_000;
+export const DEFAULT_LIFETIME = 200_000;
+export const DEFAULT_REQUEST_STREAM_PREFETCH = 5;
+export const DEFAULT_REQUEST_CHANNEL_PREFETCH = 256;
+
+function createConnectorFactory(): ConnectorFactory {
+  return (config) => new RSocketConnector(config);
+}
+
+function createTransportFactory(
+  webSocketFactory?: WebSocketFactory
+): TransportFactory {
+  return (connection) =>
+    new WebsocketClientTransport({
+      url: connection.brokerUrl,
+      wsCreator: resolveWebSocketFactory(webSocketFactory),
+    });
+}
+
 export class RsocketBrokerClient {
-
-  constructor() { console.log("rsocketBrokerClient constructor"); }
-
   readonly stringCodec = new StringCodec();
 
-  public addMetadata(token: string, originId: BrokerClientId, route: string, addressMetaDataTags: Tags, addressTags: Tags, flags: number) {
-    const map = new Map<string | number |WellKnownMimeType, Buffer>();
-    if (route) {
-      const encodedRoute = encodeRoute(route);
-      map.set(MESSAGE_RSOCKET_ROUTING, encodedRoute);
-    }
-    map.set('message/x.rsocket.broker.frame.v0', encodeBrokerAddress(originId, addressMetaDataTags, addressTags, flags));
-    return map;
+  private readonly createConnector: ConnectorFactory;
+
+  private readonly createTransport: TransportFactory;
+
+  constructor(options: RsocketBrokerClientOptions = {}) {
+    this.createConnector = options.createConnector ?? createConnectorFactory();
+    this.createTransport =
+      options.createTransport ??
+      createTransportFactory(options.webSocketFactory);
   }
 
-  public async fireAndForget(rsocket: RSocket, payload: string, metadata : Map<string | number | WellKnownMimeType, Buffer>) {
+  public addMetadata(
+    token: string,
+    originId: BrokerClientId,
+    route: string,
+    addressMetadataTags: Tags,
+    addressTags: Tags,
+    flags: number
+  ): BrokerMetadata {
+    const metadata = createBrokerMetadata();
+
+    addAuthenticationMetadata(metadata, token);
+    addRouteMetadata(metadata, route);
+    metadata.set(
+      BROKER_FRAME_MIME_TYPE,
+      encodeBrokerAddress(originId, addressMetadataTags, addressTags, flags)
+    );
+
+    return metadata;
+  }
+
+  public fireAndForget(
+    rsocket: RSocket,
+    payload: string,
+    metadata: BrokerMetadata
+  ) {
     const request = RxRequestersFactory.fireAndForget(
       payload,
       this.stringCodec
@@ -69,70 +127,189 @@ export class RsocketBrokerClient {
     return request(rsocket, metadata);
   }
 
-  public async requestResponse(rsocket: RSocket, payload: string, metadata : Map<string | number | WellKnownMimeType, Buffer>) {
+  public requestResponse(
+    rsocket: RSocket,
+    payload: string,
+    metadata: BrokerMetadata
+  ) {
     const request = RxRequestersFactory.requestResponse(
       payload,
       this.stringCodec,
       this.stringCodec
     );
+
     return request(rsocket, metadata);
   }
 
-  public async requestStream(rsocket: RSocket, payload: string, metadata : Map<string | number | WellKnownMimeType, Buffer>) {
+  public requestStream(
+    rsocket: RSocket,
+    payload: string,
+    metadata: BrokerMetadata
+  ) {
     const request = RxRequestersFactory.requestStream(
       payload,
       this.stringCodec,
       this.stringCodec,
-      5
+      DEFAULT_REQUEST_STREAM_PREFETCH
     );
+
     return request(rsocket, metadata);
   }
 
-  /* request channel may not be currently supported by rsocket broker */
-  public async requestChannel(rsocket: RSocket, payload: Observable<string>, metadata : Map<string | number | WellKnownMimeType, Buffer>) {
+  public requestChannel(
+    rsocket: RSocket,
+    payload: Observable<string>,
+    metadata: BrokerMetadata
+  ) {
     const request = RxRequestersFactory.requestChannel(
       payload,
       this.stringCodec,
       this.stringCodec,
-      256,
+      DEFAULT_REQUEST_CHANNEL_PREFETCH,
       asyncScheduler
     );
+
     return request(rsocket, metadata);
   }
 
-  public async connect(setupConnection : ConnectionProperties): Promise<RSocket> {
-    window.Buffer = window.Buffer || Buffer;
+  public async connect(
+    setupConnection: ConnectionProperties
+  ): Promise<RSocket> {
+    const {
+      brokerClientId,
+      brokerClientName,
+      connectionTags,
+      dataMimeType = BROKER_DEFAULT_DATA_MIME_TYPE,
+      keepAlive = DEFAULT_KEEP_ALIVE,
+      lifetime = DEFAULT_LIFETIME,
+      metadataMimeType = MESSAGE_RSOCKET_COMPOSITE_METADATA.string,
+      token,
+    } = setupConnection;
 
-    const connector = new RSocketConnector({
-      setup: {
-        payload: {  data: Buffer.allocUnsafe(0), metadata: addBrokerRouteSetup(setupConnection.token, setupConnection.brokerClientId, setupConnection.brokerClientName, setupConnection.connectionTags) },
-        keepAlive: 10000,
-        lifetime: 200000,
-        dataMimeType: "application/json",
-        metadataMimeType: MESSAGE_RSOCKET_COMPOSITE_METADATA.string,
-      },
+    ensureBufferGlobal();
 
-      transport: new WebsocketClientTransport({
-        url: setupConnection.brokerUrl,
-        wsCreator: (url) => new WebSocket(url) as never,
-      }),
-    });
+    const connector = this.createConnector(
+      createConnectorConfig(this.createTransport(setupConnection), {
+        brokerClientId,
+        brokerClientName,
+        connectionTags,
+        dataMimeType,
+        keepAlive,
+        lifetime,
+        metadataMimeType,
+        token,
+      })
+    );
 
-    return await connector.connect();
+    return connector.connect();
   }
 }
 
-function addBrokerRouteSetup(token: string, routeId: BrokerClientId, serviceName: string, tags: Tags) {
-  const map = new Map<WellKnownMimeType, Buffer>();
-  map.set(MESSAGE_RSOCKET_AUTHENTICATION, encodeBearerAuthMetadata(token));
-  const compositeMetaData = encodeCompositeMetadata(map);
-  return encodeAndAddCustomMetadata(compositeMetaData,'message/x.rsocket.broker.frame.v0', encodeBrokerRouteSetup(routeId, serviceName, tags));
+function createBrokerMetadata(): BrokerMetadata {
+  return new Map<BrokerMetadataKey, Buffer>();
 }
 
+function addAuthenticationMetadata(
+  metadata: Map<WellKnownMimeType | BrokerMetadataKey, Buffer>,
+  token: string
+): void {
+  if (!token) {
+    return;
+  }
 
+  metadata.set(MESSAGE_RSOCKET_AUTHENTICATION, encodeBearerAuthMetadata(token));
+}
+
+function addRouteMetadata(metadata: BrokerMetadata, route: string): void {
+  if (!route) {
+    return;
+  }
+
+  metadata.set(MESSAGE_RSOCKET_ROUTING, encodeRoute(route));
+}
+
+function createConnectorConfig(
+  transport: ClientTransport,
+  options: {
+    brokerClientId: BrokerClientId;
+    brokerClientName: string;
+    connectionTags: Tags;
+    dataMimeType: string;
+    keepAlive: number;
+    lifetime: number;
+    metadataMimeType: string;
+    token: string;
+  }
+): ConnectorConfig {
+  return {
+    setup: {
+      payload: {
+        data: Buffer.alloc(0),
+        metadata: encodeSetupMetadata(
+          options.token,
+          options.brokerClientId,
+          options.brokerClientName,
+          options.connectionTags
+        ),
+      },
+      keepAlive: options.keepAlive,
+      lifetime: options.lifetime,
+      dataMimeType: options.dataMimeType,
+      metadataMimeType: options.metadataMimeType,
+    },
+    transport,
+  };
+}
+
+function encodeSetupMetadata(
+  token: string,
+  routeId: BrokerClientId,
+  serviceName: string,
+  tags: Tags
+): Buffer {
+  const metadata = new Map<WellKnownMimeType, Buffer>();
+
+  addAuthenticationMetadata(metadata, token);
+
+  return encodeAndAddCustomMetadata(
+    encodeCompositeMetadata(metadata),
+    BROKER_FRAME_MIME_TYPE,
+    encodeBrokerRouteSetup(routeId, serviceName, tags)
+  );
+}
+
+function ensureBufferGlobal(): void {
+  const scope = globalThis as BufferGlobal;
+
+  scope.Buffer ??= Buffer;
+
+  if (scope.window) {
+    scope.window.Buffer ??= Buffer;
+  }
+}
+
+function resolveWebSocketFactory(
+  webSocketFactory?: WebSocketFactory
+): WebSocketFactory {
+  if (webSocketFactory) {
+    return webSocketFactory;
+  }
+
+  const scope = globalThis as BufferGlobal;
+
+  if (!scope.WebSocket) {
+    throw new Error(
+      'No WebSocket implementation is available. Pass a webSocketFactory when connecting outside the browser.'
+    );
+  }
+
+  const WebSocketImplementation = scope.WebSocket;
+
+  return (url) => new WebSocketImplementation(url);
+}
 
 export class StringCodec implements Codec<string> {
-  readonly mimeType: string = "application/json";
+  readonly mimeType = 'application/json';
 
   decode(buffer: Buffer): string {
     return buffer.toString();
