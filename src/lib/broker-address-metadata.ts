@@ -13,62 +13,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
-import { Tags } from "./tags";
-import { BrokerFrameType } from "./broker-frame-type";
-import { BrokerClientId } from "./broker-client-id";
+import { BrokerClientId } from './broker-client-id';
+import { BrokerFrameType } from './broker-frame-type';
+import {
+  encodeBrokerClientId,
+  encodeBrokerFrameHeader,
+  encodeBrokerTags,
+} from './encoding';
+import { Tags } from './tags';
 
 export class BrokerAddressMetadata {
-    _buffer: Buffer;
+  readonly buffer: Buffer;
 
-    constructor(buffer: Buffer) {
-        this._buffer = buffer;
-    }
+  constructor(buffer: Buffer) {
+    this.buffer = buffer;
+  }
+
+  get _buffer(): Buffer {
+    return this.buffer;
+  }
+
+  static encode(
+    id: BrokerClientId,
+    addressMetadataTags: Tags,
+    addressTags: Tags,
+    flags: number
+  ): BrokerAddressMetadata {
+    return new BrokerAddressMetadata(
+      encodeBrokerAddress(id, addressMetadataTags, addressTags, flags)
+    );
+  }
 }
 
-function toHex(first: bigint) {
-    return first.toString(16)
-}
-
-function encodeAddressFrameTags(addressTags : Tags) {
-    let tagsBuffer = Buffer.alloc(0);
-    addressTags.forEach((value, key) => {
-        const tagBuffer = Buffer.from(value);
-        const tagMetadataBuffer = Buffer.allocUnsafe(2 + value.length);
-        tagMetadataBuffer.writeUInt8(key, 0);
-        tagMetadataBuffer.writeUInt8(value.length, 1);
-        tagBuffer.copy(tagMetadataBuffer, 2)
-        tagsBuffer = Buffer.concat([tagsBuffer, tagMetadataBuffer]);
-    });
-    return tagsBuffer;
-}
-
-function encodeHeaderTypeAndFlags(flags: number) {
-    const frameMask = Number(BrokerFrameType.ADDRESS << 10);
-    const typeAndFlags = Number(frameMask | flags);
-    const hexValue = typeAndFlags.toString(16);
-    const headerBuffer = Buffer.from([
-        0x00, 0x00, 0x1C, 0x01
-    ]);
-    return Buffer.concat([headerBuffer, Buffer.from(hexValue, 'hex')]);
-}
-
-function encodeOriginatorId(id: BrokerClientId) {
-    const idFirstBuffer = Buffer.allocUnsafe(8);
-    idFirstBuffer.write(toHex(id.first), 0);
-    const idSecondBuffer = Buffer.allocUnsafe(8);
-    idSecondBuffer.write(toHex(id.second), 0);
-    return Buffer.concat([idFirstBuffer, idSecondBuffer]);
-}
-
-export function encodeBrokerAddress(id: BrokerClientId, addressMetadataTags: Tags, addressTags : Tags, flags: number ): Buffer {
-
-    const headerBuffer = encodeHeaderTypeAndFlags(flags);
-    const idBuffer = encodeOriginatorId(id);
-
-    const tagsMetaDataBuffer = encodeAddressFrameTags(addressMetadataTags);
-    const tagsAddressBuffer = encodeAddressFrameTags(addressTags);
-
-    return Buffer.concat([headerBuffer, idBuffer, tagsMetaDataBuffer, tagsAddressBuffer]);
+export function encodeBrokerAddress(
+  id: BrokerClientId,
+  addressMetadataTags: Tags,
+  addressTags: Tags,
+  flags: number
+): Buffer {
+  return Buffer.concat([
+    encodeBrokerFrameHeader(BrokerFrameType.ADDRESS, flags),
+    encodeBrokerClientId(id),
+    encodeBrokerTags(addressMetadataTags),
+    encodeBrokerTags(addressTags),
+  ]);
 }

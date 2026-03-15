@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 export enum BrokerRoutingType {
-
-    UNICAST = ( 128 ),
-    MULTICAST = ( 64 ),
-    SHARD = ( 32 ),
+  UNICAST = 128,
+  MULTICAST = 64,
+  SHARD = 32,
 }

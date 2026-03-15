@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 export enum BrokerFrameType {
-
-    ADDRESS = ( 5 ),
-    ROUTE_SETUP = ( 1 )
-
+  ADDRESS = 5,
+  ROUTE_SETUP = 1,
 }

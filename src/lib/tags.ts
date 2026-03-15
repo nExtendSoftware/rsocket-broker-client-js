@@ -13,8 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+export type TagEntries = Iterable<readonly [number, string]>;
+
 export class Tags extends Map<number, string> {
-  constructor() {
-    super();
+  constructor(entries?: TagEntries) {
+    super(entries);
+  }
+
+  clone(): Tags {
+    return new Tags(this);
   }
 }

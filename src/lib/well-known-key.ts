@@ -17,8 +17,6 @@
 // Purpose: Enumerates the well-known keys used in the RSocket Broker.
 
 export enum WellKnownKey {
-
-    SERVICE_NAME = 129,
-    ROUTE_ID = 2,
-
+  SERVICE_NAME = 129,
+  ROUTE_ID = 2,
 }
