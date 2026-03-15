@@ -68,6 +68,28 @@ export class App {
     this.requestProperties.flags
   );
 
+  protected readonly interactionExamples = [
+    'await client.fireAndForget(rsocket, requestProperties.payload.toString(), metadata);',
+    '',
+    'const response = client.requestResponse(',
+    '  rsocket,',
+    '  requestProperties.payload.toString(),',
+    '  metadata',
+    ');',
+    '',
+    'const stream = client.requestStream(',
+    '  rsocket,',
+    '  requestProperties.payload.toString(),',
+    '  metadata',
+    ');',
+    '',
+    'const channel = client.requestChannel(',
+    '  rsocket,',
+    '  of(requestProperties.payload.toString()),',
+    '  metadata',
+    ');',
+  ].join('\n');
+
   protected async connectToBroker(): Promise<void> {
     this.connectionStatus = 'Connecting...';
     this.connectionError = null;

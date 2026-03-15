@@ -100,6 +100,8 @@ The package requires Node `>=18` for development and publishing.
 ## Usage
 
 ```ts
+import { of } from 'rxjs';
+
 import {
   BrokerClientId,
   BrokerRoutingType,
@@ -144,18 +146,46 @@ const metadata = brokerClient.addMetadata(
   requestProperties.flags
 );
 
-const response = brokerClient.requestStream(
+const streamResponse = brokerClient.requestStream(
   rsocket,
   requestProperties.payload.toString(),
   metadata
 );
 
-response.subscribe({
+streamResponse.subscribe({
   next: (payload: string) => console.log(payload),
   error: (error: Error) => console.error(error),
   complete: () => console.log('complete'),
 });
+
+await brokerClient.fireAndForget(
+  rsocket,
+  requestProperties.payload.toString(),
+  metadata
+);
+
+const response = brokerClient.requestResponse(
+  rsocket,
+  requestProperties.payload.toString(),
+  metadata
+);
+
+const channelResponse = brokerClient.requestChannel(
+  rsocket,
+  of(requestProperties.payload.toString()),
+  metadata
+);
 ```
+
+## Interaction models
+
+After `const rsocket = await brokerClient.connect(connectionProperties);`, the
+client supports all four requester interaction models:
+
+- `fireAndForget(rsocket, payload, metadata)`
+- `requestResponse(rsocket, payload, metadata)`
+- `requestStream(rsocket, payload, metadata)`
+- `requestChannel(rsocket, payload$, metadata)`
 
 When using the client outside the browser, pass a `webSocketFactory` in the
 constructor so the transport can create websocket connections.

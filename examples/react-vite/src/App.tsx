@@ -51,6 +51,28 @@ const metadata = client.addMetadata(
   requestProperties.flags
 );
 
+const interactionExamples = [
+  'await client.fireAndForget(rsocket, requestProperties.payload.toString(), metadata);',
+  '',
+  'const response = client.requestResponse(',
+  '  rsocket,',
+  '  requestProperties.payload.toString(),',
+  '  metadata',
+  ');',
+  '',
+  'const stream = client.requestStream(',
+  '  rsocket,',
+  '  requestProperties.payload.toString(),',
+  '  metadata',
+  ');',
+  '',
+  'const channel = client.requestChannel(',
+  '  rsocket,',
+  '  of(requestProperties.payload.toString()),',
+  '  metadata',
+  ');',
+].join('\n');
+
 export default function App() {
   const [connectionStatus, setConnectionStatus] =
     useState('Not connected yet.');
@@ -119,11 +141,7 @@ export default function App() {
             {[
               'const rsocket = await client.connect(connectionProperties);',
               '',
-              'const response = client.requestStream(',
-              '  rsocket,',
-              '  requestProperties.payload.toString(),',
-              '  metadata',
-              ');',
+              interactionExamples,
             ].join('\n')}
           </code>
         </pre>
