@@ -1,0 +1,49 @@
+<main class="page">
+  <section class="card">
+    <p class="eyebrow">Angular 21</p>
+    <h1>RSocket Broker Client</h1>
+    <p class="lede">
+      This example verifies that the package can be imported and configured from
+      a current standalone Angular app.
+    </p>
+
+    <dl class="grid">
+      <div>
+        <dt>Client name</dt>
+        <dd>{{ connectionProperties.brokerClientName }}</dd>
+      </div>
+      <div>
+        <dt>Broker URL</dt>
+        <dd>{{ connectionProperties.brokerUrl }}</dd>
+      </div>
+      <div>
+        <dt>Routing mode</dt>
+        <dd>{{ requestProperties.flags }}</dd>
+      </div>
+      <div>
+        <dt>Metadata entries</dt>
+        <dd>{{ metadata.size }}</dd>
+      </div>
+    </dl>
+
+    <div class="actions">
+      <button class="button" type="button" (click)="connectToBroker()">
+        Connect to broker
+      </button>
+      <p class="status">{{ connectionStatus }}</p>
+      @if (connectionError) {
+      <p class="error">{{ connectionError }}</p>
+      }
+    </div>
+
+    <pre
+      class="code"
+    ><code>const rsocket = await client.connect(connectionProperties);
+
+const response = client.requestStream(
+  rsocket,
+  requestProperties.payload.toString(),
+  metadata
+);</code></pre>
+  </section>
+</main>
