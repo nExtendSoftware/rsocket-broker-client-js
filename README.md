@@ -5,11 +5,24 @@ RSocket Broker Client for JavaScript, intended for use with
 
 ## Installation
 
+### Install as a dependency
+
 ```bash
 npm install rsocket-broker-client-js
 ```
 
 You need a running broker instance and a target service to connect to.
+
+### Install for local development
+
+```bash
+git clone https://github.com/nExtendSoftware/rsocket-broker-client-js.git
+cd rsocket-broker-client-js
+npm install
+```
+
+The repository uses npm workspaces for the example apps, so a single root
+`npm install` also installs the Angular and React example dependencies.
 
 ## Framework compatibility
 
@@ -41,6 +54,48 @@ dependencies are available to TypeScript and your editor.
 - Fire-and-Forget
 - Request/Channel client API
 - Composite metadata for authentication, routing and broker frames
+
+## Configuration
+
+### Connection properties
+
+`connect(connectionProperties)` accepts:
+
+- `token`: bearer token sent in setup metadata
+- `brokerUrl`: websocket URL of the broker, for example `ws://localhost:7171`
+- `brokerClientId`: unique client identifier, usually `new BrokerClientId()`
+- `brokerClientName`: logical name shown to the broker
+- `connectionTags`: tags attached to the connection setup
+- `keepAlive` optional: keepalive interval in milliseconds, default `10000`
+- `lifetime` optional: connection lifetime in milliseconds, default `200000`
+- `dataMimeType` optional: data mime type, default `application/json`
+- `metadataMimeType` optional: metadata mime type, default RSocket composite metadata
+
+### Request properties
+
+`addMetadata(...)` and the request methods use:
+
+- `token`: bearer token for request metadata
+- `brokerClientId`: origin client identifier
+- `route`: route name to encode into RSocket routing metadata
+- `brokerTargetName`: logical target service name used by your app-level routing
+- `addressTags`: broker address tags used for routing
+- `addressMetadataTags`: additional broker metadata tags
+- `flags`: one of `BrokerRoutingType.UNICAST`, `MULTICAST`, or `SHARD`
+
+### Browser and Node usage
+
+In the browser, the client can use the global `WebSocket` implementation.
+
+Outside the browser, pass a websocket factory:
+
+```ts
+const brokerClient = new RsocketBrokerClient({
+  webSocketFactory: (url) => new WebSocket(url),
+});
+```
+
+The package requires Node `>=18` for development and publishing.
 
 ## Usage
 
@@ -118,3 +173,7 @@ npm test
 ```
 
 Unit tests run with [Vitest](https://vitest.dev/).
+
+## Release
+
+For npm publishing and release steps, see [RELEASING.md](RELEASING.md).
