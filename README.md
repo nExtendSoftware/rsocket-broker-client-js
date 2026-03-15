@@ -1,92 +1,120 @@
 # rsocket-broker-client-js
 
-RSocket Broker Client for JavaScript, 
-to be used in conjunction with  [rsocket-broker](https://github.com/rsocket-broker/rsocket-broker)
+RSocket Broker Client for JavaScript, intended for use with
+[rsocket-broker](https://github.com/rsocket-broker/rsocket-broker).
 
-## Installation 
+## Installation
 
-    npm install rsocket-broker-client-js
+```bash
+npm install rsocket-broker-client-js
+```
 
-    required running broker instance and target service
+You need a running broker instance and a target service to connect to.
 
-    todo: add docker-compose file for running broker and target service
+## Framework compatibility
+
+Validated on March 15, 2026 with:
+
+- Angular `21.2.4` package line, smoke-tested with Angular CLI `21.2.2`
+- React `19.2.4`, smoke-tested with Vite `8`
+
+The package now publishes compiled ESM output instead of raw TypeScript source,
+which is the main requirement for current Angular and React toolchains.
+
+Angular 21 still reports CommonJS optimization warnings for the upstream
+`rsocket-*` dependencies. The application build succeeds, but those warnings
+remain until the RSocket packages ship ESM builds.
+
+## Examples
+
+Run `npm install` at the repository root first so the workspace example
+dependencies are available to TypeScript and your editor.
+
+- React example: [examples/react-vite/README.md](examples/react-vite/README.md)
+- Angular example:
+  [examples/angular-standalone/README.md](examples/angular-standalone/README.md)
 
 ## Features
 
-- [x] Request/Response
-- [x] Request/Stream
-- [x] Fire/And/Forget
-- [ ] Metadata
-- [ ] Request/Channel
-- [ ] Responders
+- Request/Response
+- Request/Stream
+- Fire-and-Forget
+- Request/Channel client API
+- Composite metadata for authentication, routing and broker frames
 
 ## Usage
 
-    /* instance of RSocket-broker-client 
-        (maybe define or wrap into service) */
-    const rsocket-broker-client = new RsocketBrokerClient();
+```ts
+import {
+  BrokerClientId,
+  BrokerRoutingType,
+  ConnectionProperties,
+  RequestProperties,
+  RsocketBrokerClient,
+  Tags,
+} from 'rsocket-broker-client-js';
 
-    /* create a new broker client id */
-    const id = new BrokerClientId();
+const brokerClient = new RsocketBrokerClient();
+const id = new BrokerClientId();
 
-    /* create client connection properties */
-    const connectionProperties: ConnectionProperties = {
-      token: 'AValidJWTToken',
-      brokerUrl: 'ws://localhost:7171',
-      brokerClientId: id,
-      brokerClientName: 'angularBrokerClient',
-      connectionTags: new Tags(),
-    };
+const connectionProperties: ConnectionProperties = {
+  token: 'AValidJWTToken',
+  brokerUrl: 'ws://localhost:7171',
+  brokerClientId: id,
+  brokerClientName: 'web-broker-client',
+  connectionTags: new Tags(),
+  keepAlive: 10_000,
+  lifetime: 200_000,
+};
 
-    const rsocket = await this.rsocket-broker-client.connect(connectionProperties);
+const rsocket = await brokerClient.connect(connectionProperties);
 
-    /*  
-        data to send to target destination function, 
-        dummyData in this sample assumes same type is returned, 
-        but obviously would depend on function call. 
-        This is just to show how to send data to target function
-    */
+const requestProperties: RequestProperties = {
+  token: 'AValidJWTToken',
+  payload: Buffer.from(JSON.stringify({ value: 'test' })),
+  brokerClientId: id,
+  route: 'targetFunctionName',
+  brokerTargetName: 'targetServiceName',
+  addressTags: new Tags(),
+  addressMetadataTags: new Tags(),
+  flags: BrokerRoutingType.UNICAST,
+};
 
-    const dummyData = new DummyData();
-    dummyData.value = 'test';
+const metadata = brokerClient.addMetadata(
+  requestProperties.token,
+  requestProperties.brokerClientId,
+  requestProperties.route,
+  requestProperties.addressMetadataTags,
+  requestProperties.addressTags,
+  requestProperties.flags
+);
 
-    /* 
-        address tags are used to route to target function, 
-        in this sample we are using the same tags as the target function
-        Available RoutingTypes UNICAST, MULTICAST, SHARD
-        The latter is untested.
-    */
-    const requestProperties: RequestProperties = {
-      payload:  Buffer.from(dummyData.toPayloadString()),
-      brokerClientId: id,
-      route: 'targetFunctionName',
-      brokerTargetName: 'targetServiceName',
-      addressTags: addressTags,
-      addressMetadataTags: new Tags(),
-      flags: BrokerRoutingType.UNICAST,
-    };  
-    
-    /* 
-        send request/responsestream to target function
-        metadata is not optional
-    */
-    const metadata=  this.rsocket-broker-client.addMetadata(requestProperties.token, requestProperties.brokerClientId, requestProperties.route, requestProperties.addressMetadataTags, requestProperties.addressTags, requestProperties.flags)
-    const response = await this.rsocket-broker-client.requestStream(rsocket, dummyData.toPayloadString(), metadata);
-    response.subscribe({
-        next: (payload: string) => {
-          const dummyData = new DummyData();
-          dummyData.fromPayloadString(payload);
-          console.log(dummyData);
-        },
-        error: (error: Error) => { console.log(error); },
-        complete: () => { console.log('complete'); },
-    });
+const response = brokerClient.requestStream(
+  rsocket,
+  requestProperties.payload.toString(),
+  metadata
+);
 
+response.subscribe({
+  next: (payload: string) => console.log(payload),
+  error: (error: Error) => console.error(error),
+  complete: () => console.log('complete'),
+});
+```
+
+When using the client outside the browser, pass a `webSocketFactory` in the
+constructor so the transport can create websocket connections.
 
 ## Building
 
-Run `nx build rsocket-broker-client-js` to build the library.
+```bash
+npm run build
+```
 
 ## Running unit tests
 
-Run `nx test rsocket-broker-client-js` to execute the unit tests via [Jest](https://jestjs.io).
+```bash
+npm test
+```
+
+Unit tests run with [Vitest](https://vitest.dev/).

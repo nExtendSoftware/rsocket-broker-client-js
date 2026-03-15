@@ -2,12 +2,18 @@
   "name": "rsocket-broker-client-js",
   "version": "0.0.28",
   "license": "Apache-2.0",
+  "workspaces": [
+    "examples/react-vite",
+    "examples/angular-standalone"
+  ],
   "scripts": {
-    "test": "nx exec -- nx test"
+    "build": "nx build rsocket-broker-client-js",
+    "lint": "nx lint rsocket-broker-client-js",
+    "prepack": "npm run build",
+    "test": "nx test rsocket-broker-client-js"
   },
   "files": [
-    "lib",
-    "src",
+    "dist/rsocket-broker-client-js/src",
     "README.md",
     "LICENSE"
   ],
@@ -25,12 +31,12 @@
     "broker",
     "client"
   ],
+  "sideEffects": false,
   "dependencies": {
     "buffer": "^6.0.3",
     "rsocket-adapter-rxjs": "^1.0.0-alpha.4",
     "rsocket-composite-metadata": "^1.0.0-alpha.3",
     "rsocket-core": "^1.0.0-alpha.3",
-    "rsocket-messaging": "^1.0.0-alpha.3",
     "rsocket-websocket-client": "^1.0.0-alpha.3",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
@@ -62,17 +68,18 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./src/index.js",
-      "require": "./src/index.js",
-      "types": "./src/index.d.ts"
-    },
-    "./src/index.js": {
-      "import": "./src/index.js",
-      "require": "./src/index.js"
+      "types": "./dist/rsocket-broker-client-js/src/index.d.ts",
+      "import": "./dist/rsocket-broker-client-js/src/index.js"
     }
   },
-  "typings": "./src/index.d.ts",
+  "main": "./dist/rsocket-broker-client-js/src/index.js",
+  "module": "./dist/rsocket-broker-client-js/src/index.js",
+  "types": "./dist/rsocket-broker-client-js/src/index.d.ts",
+  "typings": "./dist/rsocket-broker-client-js/src/index.d.ts",
   "nx": {
     "targets": {}
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
