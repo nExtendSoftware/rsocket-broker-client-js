@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BrokerClientId } from './broker-client-id';
+import { BrokerClientId } from './broker-client-id.js';
 import {
   BROKER_CLIENT_ID_LENGTH,
   BROKER_HEADER_LENGTH,
@@ -21,9 +21,9 @@ import {
   encodeBrokerFrameHeader,
   encodeBrokerTags,
   encodeLengthPrefixedText,
-} from './encoding';
-import { BrokerFrameType } from './broker-frame-type';
-import { Tags } from './tags';
+} from './encoding.js';
+import { BrokerFrameType } from './broker-frame-type.js';
+import { Tags } from './tags.js';
 
 export class BrokerRouteSetupMetadata {
   readonly buffer: Buffer;
@@ -71,10 +71,16 @@ export function encodeBrokerRouteSetup(
   serviceName: string,
   tags: Tags
 ): Buffer {
-  return Buffer.concat([
-    encodeBrokerFrameHeader(BrokerFrameType.ROUTE_SETUP),
-    encodeBrokerClientId(id),
-    encodeLengthPrefixedText(serviceName, 'serviceName'),
-    encodeBrokerTags(tags),
-  ]);
+  return Buffer.concat(
+    [
+      encodeBrokerFrameHeader(BrokerFrameType.ROUTE_SETUP),
+      encodeBrokerClientId(id),
+      encodeLengthPrefixedText(serviceName, 'serviceName'),
+      encodeBrokerTags(tags),
+    ].map(asBufferView)
+  );
+}
+
+function asBufferView(buffer: Buffer): Uint8Array {
+  return buffer as unknown as Uint8Array;
 }

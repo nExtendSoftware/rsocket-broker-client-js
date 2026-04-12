@@ -1,6 +1,6 @@
 {
   "name": "rsocket-broker-client-js",
-  "version": "0.0.31",
+  "version": "0.0.32",
   "license": "Apache-2.0",
   "workspaces": [
     "examples/react-vite",
@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nExtendSoftware/rsocket-broker-client-js.git"
+    "url": "git+https://github.com/nExtendSoftware/rsocket-broker-client-js.git"
   },
   "author": "Original authors rsocket-js, additions by @veltmanj",
   "description": "RSocket Broker Client JS",
@@ -69,7 +69,8 @@
   "exports": {
     ".": {
       "types": "./dist/rsocket-broker-client-js/src/index.d.ts",
-      "import": "./dist/rsocket-broker-client-js/src/index.js"
+      "import": "./dist/rsocket-broker-client-js/src/index.js",
+      "default": "./dist/rsocket-broker-client-js/src/index.js"
     }
   },
   "main": "./dist/rsocket-broker-client-js/src/index.js",

@@ -25,17 +25,21 @@ import {
 } from 'rsocket-composite-metadata';
 import { RSocketConnector } from 'rsocket-core';
 import type { ClientTransport, ConnectorConfig, RSocket } from 'rsocket-core';
-import { WebsocketClientTransport } from 'rsocket-websocket-client';
 
-import { encodeBrokerAddress } from './broker-address-metadata';
-import { BrokerClientId } from './broker-client-id';
-import { ConnectionProperties } from './connection-properties';
+import { encodeBrokerAddress } from './broker-address-metadata.js';
+import { BrokerClientId } from './broker-client-id.js';
+import { ConnectionProperties } from './connection-properties.js';
 import {
   BROKER_DEFAULT_DATA_MIME_TYPE,
   BROKER_FRAME_MIME_TYPE,
-} from './encoding';
-import { encodeBrokerRouteSetup } from './broker-route-setup-metadata';
-import { Tags } from './tags';
+} from './encoding.js';
+import { encodeBrokerRouteSetup } from './broker-route-setup-metadata.js';
+import { Tags } from './tags.js';
+import {
+  WebTransportClientTransport,
+  WebTransportFactory,
+} from './webtransport-client-transport.js';
+import { BrowserWebsocketClientTransport } from './websocket-client-transport.js';
 
 import MESSAGE_RSOCKET_AUTHENTICATION = WellKnownMimeType.MESSAGE_RSOCKET_AUTHENTICATION;
 import MESSAGE_RSOCKET_COMPOSITE_METADATA = WellKnownMimeType.MESSAGE_RSOCKET_COMPOSITE_METADATA;
@@ -44,10 +48,21 @@ import MESSAGE_RSOCKET_ROUTING = WellKnownMimeType.MESSAGE_RSOCKET_ROUTING;
 export type BrokerMetadataKey = string | number | WellKnownMimeType;
 export type BrokerMetadata = Map<BrokerMetadataKey, Buffer>;
 export type WebSocketFactory = (url: string) => WebSocket;
+type H3TransportConstructor = new (options: {
+  url: string;
+  ca?: string | Uint8Array | Array<string | Uint8Array>;
+  rejectUnauthorized?: boolean;
+  servername?: string;
+  runtimeMode?: 'auto' | 'fast' | 'portable';
+  fallbackPolicy?: 'error' | 'warn-and-fallback';
+  path?: string;
+  headers?: Record<string, string>;
+}) => ClientTransport;
 
 type ConnectorLike = Pick<RSocketConnector, 'connect'>;
 type ConnectorFactory = (config: ConnectorConfig) => ConnectorLike;
 type TransportFactory = (connection: ConnectionProperties) => ClientTransport;
+type H3TransportLoader = () => H3TransportConstructor;
 type BufferGlobal = typeof globalThis & {
   Buffer?: typeof Buffer;
   WebSocket?: new (url: string) => WebSocket;
@@ -59,6 +74,8 @@ type BufferGlobal = typeof globalThis & {
 export interface RsocketBrokerClientOptions {
   createConnector?: ConnectorFactory;
   createTransport?: TransportFactory;
+  loadH3ClientTransport?: H3TransportLoader;
+  webTransportFactory?: WebTransportFactory;
   webSocketFactory?: WebSocketFactory;
 }
 
@@ -72,13 +89,39 @@ function createConnectorFactory(): ConnectorFactory {
 }
 
 function createTransportFactory(
-  webSocketFactory?: WebSocketFactory
+  webTransportFactory?: WebTransportFactory,
+  webSocketFactory?: WebSocketFactory,
+  loadH3ClientTransport: H3TransportLoader = defaultLoadH3ClientTransport
 ): TransportFactory {
-  return (connection) =>
-    new WebsocketClientTransport({
+  return (connection) => {
+    if (isH3Url(connection.brokerUrl)) {
+      const H3ClientTransport = loadH3ClientTransport();
+
+      return new H3ClientTransport({
+        url: connection.brokerUrl,
+        ca: connection.h3?.ca,
+        rejectUnauthorized: connection.h3?.rejectUnauthorized,
+        servername: connection.h3?.servername,
+        runtimeMode: connection.h3?.runtimeMode,
+        fallbackPolicy: connection.h3?.fallbackPolicy,
+        path: connection.h3?.path,
+        headers: connection.h3?.headers,
+      });
+    }
+
+    if (isWebTransportUrl(connection.brokerUrl)) {
+      return new WebTransportClientTransport({
+        url: connection.brokerUrl,
+        transportFactory: webTransportFactory,
+        options: connection.webTransport,
+      });
+    }
+
+    return new BrowserWebsocketClientTransport({
       url: connection.brokerUrl,
       wsCreator: resolveWebSocketFactory(webSocketFactory),
     });
+  };
 }
 
 export class RsocketBrokerClient {
@@ -92,7 +135,11 @@ export class RsocketBrokerClient {
     this.createConnector = options.createConnector ?? createConnectorFactory();
     this.createTransport =
       options.createTransport ??
-      createTransportFactory(options.webSocketFactory);
+      createTransportFactory(
+        options.webTransportFactory,
+        options.webSocketFactory,
+        options.loadH3ClientTransport
+      );
   }
 
   public addMetadata(
@@ -306,6 +353,58 @@ function resolveWebSocketFactory(
   const WebSocketImplementation = scope.WebSocket;
 
   return (url) => new WebSocketImplementation(url);
+}
+
+function defaultLoadH3ClientTransport(): H3TransportConstructor {
+  try {
+    const moduleLoader = resolveNodeRequire();
+    const require = moduleLoader.createRequire(import.meta.url);
+    const transportModule = require('rsocket-h3-client') as {
+      H3ClientTransport?: H3TransportConstructor;
+    };
+
+    if (!transportModule.H3ClientTransport) {
+      throw new Error(
+        'The rsocket-h3-client package was loaded, but it did not export H3ClientTransport.'
+      );
+    }
+
+    return transportModule.H3ClientTransport;
+  } catch (error) {
+    const message =
+      error instanceof Error ? ` ${error.message}` : ' Unknown load failure.';
+    throw new Error(
+      `An h3:// brokerUrl requires the optional rsocket-h3-client package to be installed.${message}`
+    );
+  }
+}
+
+function resolveNodeRequire(): { createRequire(url: string): NodeJS.Require } {
+  const builtinModuleLoader = (
+    globalThis as typeof globalThis & {
+      process?: {
+        getBuiltinModule?: (id: string) => {
+          createRequire?: (url: string) => NodeJS.Require;
+        };
+      };
+    }
+  ).process?.getBuiltinModule?.('module');
+
+  if (!builtinModuleLoader?.createRequire) {
+    throw new Error(
+      'Dynamic Node module loading is unavailable. Pass loadH3ClientTransport explicitly when using h3:// URLs.'
+    );
+  }
+
+  return builtinModuleLoader as { createRequire(url: string): NodeJS.Require };
+}
+
+function isH3Url(url: string): boolean {
+  return url.startsWith('h3://');
+}
+
+function isWebTransportUrl(url: string): boolean {
+  return url.startsWith('wts://');
 }
 
 export class StringCodec implements Codec<string> {

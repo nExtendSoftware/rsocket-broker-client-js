@@ -62,7 +62,7 @@ dependencies are available to TypeScript and your editor.
 `connect(connectionProperties)` accepts:
 
 - `token`: bearer token sent in setup metadata
-- `brokerUrl`: websocket URL of the broker, for example `ws://localhost:7171`
+- `brokerUrl`: transport URL of the broker, for example `ws://localhost:7171`, `h3://localhost:7171/rsocket`, or `wts://localhost:7443/broker/wt`
 - `brokerClientId`: unique client identifier, usually `new BrokerClientId()`
 - `brokerClientName`: logical name shown to the broker
 - `connectionTags`: tags attached to the connection setup
@@ -70,6 +70,8 @@ dependencies are available to TypeScript and your editor.
 - `lifetime` optional: connection lifetime in milliseconds, default `200000`
 - `dataMimeType` optional: data mime type, default `application/json`
 - `metadataMimeType` optional: metadata mime type, default RSocket composite metadata
+- `h3` optional: HTTP/3 transport options used when `brokerUrl` starts with `h3://`
+- `webTransport` optional: browser WebTransport options used when `brokerUrl` starts with `wts://`
 
 ### Request properties
 
@@ -92,6 +94,53 @@ Outside the browser, pass a websocket factory:
 ```ts
 const brokerClient = new RsocketBrokerClient({
   webSocketFactory: (url) => new WebSocket(url),
+});
+```
+
+To use HTTP/3 from Node.js, install the optional H3 transport package and use an
+`h3://` broker URL:
+
+```bash
+npm install rsocket-h3-client
+```
+
+```ts
+const brokerClient = new RsocketBrokerClient();
+
+const rsocket = await brokerClient.connect({
+  token: 'AValidJWTToken',
+  brokerUrl: 'h3://localhost:7171/rsocket',
+  brokerClientId: id,
+  brokerClientName: 'node-h3-client',
+  connectionTags: new Tags(),
+  h3: {
+    rejectUnauthorized: false,
+  },
+});
+```
+
+The H3 path defaults to the URL path or `/rsocket`, and the current transport
+expects the Java HTTP/3 prototype contract used in `rsocket-java`.
+
+To use browser `WebTransport`, point the client at a `wts://` URL. The
+transport rewrites that to `https://` for the browser `WebTransport`
+constructor:
+
+```ts
+const rsocket = await brokerClient.connect({
+  token: '',
+  brokerUrl: 'wts://localhost:7443/broker/wt',
+  brokerClientId: id,
+  brokerClientName: 'browser-webtransport-client',
+  connectionTags: new Tags(),
+  webTransport: {
+    serverCertificateHashes: [
+      {
+        algorithm: 'sha-256',
+        value: new Uint8Array([/* 32 certificate hash bytes */]).buffer,
+      },
+    ],
+  },
 });
 ```
 

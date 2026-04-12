@@ -142,6 +142,93 @@ describe('RsocketBrokerClient', () => {
     expect(capturedConfig?.setup?.payload?.metadata).toEqual(expectedMetadata);
   });
 
+  it('loads the h3 transport when the broker URL uses the h3 scheme', async () => {
+    const brokerClientId = new BrokerClientId(
+      '11223344-5566-7788-99aa-bbccddeeff00'
+    );
+    const fakeSocket = { close: vi.fn() } as unknown as RSocket;
+    let capturedConfig: ConnectorConfig | undefined;
+
+    class FakeH3Transport {
+      constructor(readonly options: Record<string, unknown>) {}
+
+      connect = vi.fn();
+    }
+
+    const client = new RsocketBrokerClient({
+      createConnector: (config) => {
+        capturedConfig = config;
+        return {
+          connect: vi.fn().mockResolvedValue(fakeSocket),
+        };
+      },
+      loadH3ClientTransport: () => FakeH3Transport as never,
+    });
+
+    await client.connect({
+      token: 'token-123',
+      brokerUrl: 'h3://localhost:7171/rsocket',
+      brokerClientId,
+      brokerClientName: 'test-client',
+      connectionTags: new Tags(),
+      h3: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    expect(capturedConfig?.transport).toBeInstanceOf(FakeH3Transport);
+    expect((capturedConfig?.transport as FakeH3Transport).options).toEqual({
+      url: 'h3://localhost:7171/rsocket',
+      ca: undefined,
+      rejectUnauthorized: false,
+      servername: undefined,
+      runtimeMode: undefined,
+      fallbackPolicy: undefined,
+      path: undefined,
+      headers: undefined,
+    });
+  });
+
+  it('loads the webtransport transport when the broker URL uses the wts scheme', async () => {
+    const brokerClientId = new BrokerClientId(
+      '11223344-5566-7788-99aa-bbccddeeff00'
+    );
+    const fakeSocket = { close: vi.fn() } as unknown as RSocket;
+    let capturedConfig: ConnectorConfig | undefined;
+    const fakeWebTransportFactory = vi.fn();
+
+    const client = new RsocketBrokerClient({
+      createConnector: (config) => {
+        capturedConfig = config;
+        return {
+          connect: vi.fn().mockResolvedValue(fakeSocket),
+        };
+      },
+      webTransportFactory: fakeWebTransportFactory,
+    });
+
+    await client.connect({
+      token: 'token-123',
+      brokerUrl: 'wts://localhost:7443/broker/wt',
+      brokerClientId,
+      brokerClientName: 'test-client',
+      connectionTags: new Tags(),
+      webTransport: {
+        allowPooling: true,
+      },
+    });
+
+    expect(capturedConfig?.transport).toMatchObject({
+      options: {
+        url: 'wts://localhost:7443/broker/wt',
+        transportFactory: fakeWebTransportFactory,
+        options: {
+          allowPooling: true,
+        },
+      },
+    });
+  });
+
   it('delegates fire-and-forget requests to the RSocket requester factory', () => {
     const client = new RsocketBrokerClient();
     const metadata = new Map();

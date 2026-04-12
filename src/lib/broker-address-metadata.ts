@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BrokerClientId } from './broker-client-id';
-import { BrokerFrameType } from './broker-frame-type';
+import { BrokerClientId } from './broker-client-id.js';
+import { BrokerFrameType } from './broker-frame-type.js';
 import {
   encodeBrokerClientId,
   encodeBrokerFrameHeader,
   encodeBrokerTags,
-} from './encoding';
-import { Tags } from './tags';
+} from './encoding.js';
+import { Tags } from './tags.js';
 
 export class BrokerAddressMetadata {
   readonly buffer: Buffer;
@@ -51,10 +51,16 @@ export function encodeBrokerAddress(
   addressTags: Tags,
   flags: number
 ): Buffer {
-  return Buffer.concat([
-    encodeBrokerFrameHeader(BrokerFrameType.ADDRESS, flags),
-    encodeBrokerClientId(id),
-    encodeBrokerTags(addressMetadataTags),
-    encodeBrokerTags(addressTags),
-  ]);
+  return Buffer.concat(
+    [
+      encodeBrokerFrameHeader(BrokerFrameType.ADDRESS, flags),
+      encodeBrokerClientId(id),
+      encodeBrokerTags(addressMetadataTags),
+      encodeBrokerTags(addressTags),
+    ].map(asBufferView)
+  );
+}
+
+function asBufferView(buffer: Buffer): Uint8Array {
+  return buffer as unknown as Uint8Array;
 }

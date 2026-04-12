@@ -17,9 +17,9 @@
 // Purpose: RSocket setup request and response types.
 
 import { Buffer } from 'buffer';
-import { BrokerClientId } from './broker-client-id';
-import { Tags } from './tags';
-import { BrokerRoutingType } from './broker-routing-type';
+import { BrokerClientId } from './broker-client-id.js';
+import { Tags } from './tags.js';
+import { BrokerRoutingType } from './broker-routing-type.js';
 
 export interface RequestProperties {
   token: string;

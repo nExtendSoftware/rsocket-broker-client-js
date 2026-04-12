@@ -14,8 +14,30 @@
  * limitations under the License.
  */
 // Purpose: RSocket setup request and response types.
-import { BrokerClientId } from './broker-client-id';
-import { Tags } from './tags';
+import { BrokerClientId } from './broker-client-id.js';
+import { Tags } from './tags.js';
+
+export interface H3ConnectionOptions {
+  ca?: string | Uint8Array | Array<string | Uint8Array>;
+  rejectUnauthorized?: boolean;
+  servername?: string;
+  runtimeMode?: 'auto' | 'fast' | 'portable';
+  fallbackPolicy?: 'error' | 'warn-and-fallback';
+  path?: string;
+  headers?: Record<string, string>;
+}
+
+export interface WebTransportHash {
+  algorithm: string;
+  value: BufferSource;
+}
+
+export interface WebTransportConnectionOptions {
+  allowPooling?: boolean;
+  congestionControl?: 'default' | 'low-latency' | 'throughput';
+  requireUnreliable?: boolean;
+  serverCertificateHashes?: WebTransportHash[];
+}
 
 export interface ConnectionProperties {
   token: string;
@@ -27,4 +49,6 @@ export interface ConnectionProperties {
   lifetime?: number;
   dataMimeType?: string;
   metadataMimeType?: string;
+  h3?: H3ConnectionOptions;
+  webTransport?: WebTransportConnectionOptions;
 }
